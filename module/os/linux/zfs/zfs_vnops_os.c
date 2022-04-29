@@ -2401,6 +2401,7 @@ top:
 		ZFS_TIME_ENCODE(&ip->i_atime, atime);
 		SA_ADD_BULK_ATTR(bulk, count, SA_ZPL_ATIME(zfsvfs), NULL,
 		    &atime, sizeof (atime));
+		// printk("zfs_set_attr(): save atime (mask & ATTR_ATIME)\n");
 	}
 
 	if (mask & (ATTR_MTIME | ATTR_SIZE)) {
@@ -3663,6 +3664,12 @@ zfs_putpage(struct inode *ip, struct page *pp, struct writeback_control *wbc,
 int
 zfs_dirty_inode(struct inode *ip, int flags)
 {
+#if defined(I_DIRTY_TIME)
+	if ((flags & I_DIRTY_TIME)) {
+		PANIC("zfs_dirty_inode(): (flags & I_DIRTY_TIME)\n");
+	}
+#endif
+
 	znode_t		*zp = ITOZ(ip);
 	zfsvfs_t	*zfsvfs = ITOZSB(ip);
 	dmu_tx_t	*tx;
@@ -3676,20 +3683,6 @@ zfs_dirty_inode(struct inode *ip, int flags)
 
 	if ((error = zfs_enter_verify_zp(zfsvfs, zp, FTAG)) != 0)
 		return (error);
-
-#ifdef I_DIRTY_TIME
-	/*
-	 * This is the lazytime semantic introduced in Linux 4.0
-	 * This flag will only be called from update_time when lazytime is set.
-	 * (Note, I_DIRTY_SYNC will also set if not lazytime)
-	 * Fortunately mtime and ctime are managed within ZFS itself, so we
-	 * only need to dirty atime.
-	 */
-	if (flags == I_DIRTY_TIME) {
-		zp->z_atime_dirty = B_TRUE;
-		goto out;
-	}
-#endif
 
 	tx = dmu_tx_create(zfsvfs->z_os);
 
@@ -3707,6 +3700,8 @@ zfs_dirty_inode(struct inode *ip, int flags)
 
 	SA_ADD_BULK_ATTR(bulk, cnt, SA_ZPL_MODE(zfsvfs), NULL, &mode, 8);
 	SA_ADD_BULK_ATTR(bulk, cnt, SA_ZPL_ATIME(zfsvfs), NULL, &atime, 16);
+	// printk("zfs_dirty_inode(): save atime\n");
+	// dump_stack();
 	SA_ADD_BULK_ATTR(bulk, cnt, SA_ZPL_MTIME(zfsvfs), NULL, &mtime, 16);
 	SA_ADD_BULK_ATTR(bulk, cnt, SA_ZPL_CTIME(zfsvfs), NULL, &ctime, 16);
 
@@ -3756,10 +3751,12 @@ zfs_inactive(struct inode *ip)
 		if (error) {
 			dmu_tx_abort(tx);
 		} else {
+			// printk("zfs_inactive(): save atime\n");
 			ZFS_TIME_ENCODE(&ip->i_atime, atime);
 			mutex_enter(&zp->z_lock);
 			(void) sa_update(zp->z_sa_hdl, SA_ZPL_ATIME(zfsvfs),
 			    (void *)&atime, sizeof (atime), tx);
+			// printk("zfs_inactive(): save atime\n");
 			zp->z_atime_dirty = B_FALSE;
 			mutex_exit(&zp->z_lock);
 			dmu_tx_commit(tx);

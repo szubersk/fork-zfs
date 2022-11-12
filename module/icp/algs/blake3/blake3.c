@@ -34,7 +34,7 @@
  * We need 1056 byte stack for blake3_compress_subtree_wide()
  * - we define this pragma to make gcc happy
  */
-#if defined(__GNUC__)
+#if defined(__GNUC__) && !defined(__clang__)
 #pragma GCC diagnostic ignored "-Wframe-larger-than="
 #endif
 

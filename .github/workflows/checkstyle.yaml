@@ -30,7 +30,7 @@ jobs:
     - name: Prepare
       run: |
         ./autogen.sh
-        ./configure
+        ./configure --enable-debug --enable-debuginfo CC=clang LD=ld.lld
         make -j$(nproc) --no-print-directory --silent
     - name: Checkstyle
       run: |

@@ -4,6 +4,7 @@ attr
 autoconf
 bc
 build-essential
+clang
 curl
 dbench
 fakeroot
@@ -13,6 +14,7 @@ gdebi
 git
 ksh
 lcov
+lld
 libacl1-dev
 libaio-dev
 libattr1-dev
@@ -28,6 +30,7 @@ libssl-dev
 libtool
 libudev-dev
 linux-headers-generic
+llvm
 lsscsi
 mdadm
 nfs-kernel-server

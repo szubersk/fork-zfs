@@ -107,7 +107,7 @@ find_rootfs()
 find_pools()
 {
 	pools=$("$@" 2> /dev/null | \
-		sed -Ee '/pool:|^[a-zA-Z0-9]/!d' -e 's@.*: @@' | \
+		sed -Ene '/^[[:space:]]*pool:/ s@.*:[[:space:]]*@@p' | \
 		tr '\n' ';')
 
 	echo "${pools%%;}" # Return without the last ';'.
